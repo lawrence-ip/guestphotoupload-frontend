@@ -7,6 +7,59 @@
   <link rel="stylesheet" href="/css/style.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="/config.js"></script>
+  <style>
+    .token-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      background: var(--pale-pink);
+      border-radius: var(--border-radius);
+      border: 2px solid transparent;
+      transition: var(--transition);
+    }
+    
+    .token-item:hover {
+      border-color: var(--light-pink);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+    
+    .token-item.expired {
+      opacity: 0.6;
+      background: var(--gray-100);
+    }
+    
+    .token-info h3 {
+      color: var(--deep-pink);
+      margin: 0 0 0.5rem 0;
+    }
+    
+    .token-details {
+      color: var(--text-light);
+      margin: 0;
+      font-size: 0.9rem;
+    }
+    
+    .token-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    
+    @media (max-width: 768px) {
+      .token-item {
+        flex-direction: column;
+        text-align: center;
+      }
+      
+      .token-actions {
+        margin-top: 1rem;
+        justify-content: center;
+      }
+    }
+  </style>
 </head>
 <body>
   <header class="header">
@@ -43,6 +96,21 @@
         <div class="stat-card">
           <div class="stat-number" id="activeTokens">0</div>
           <div class="stat-label">Active Links</div>
+        </div>
+      </div>
+
+      <!-- Subscription Section -->
+      <div class="card" id="subscriptionCard">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span>💳</span>
+            Your Subscription
+          </h2>
+        </div>
+        <div id="subscriptionContent">
+          <div class="message message-info">
+            <p>Loading subscription information...</p>
+          </div>
         </div>
       </div>
 
@@ -108,7 +176,8 @@
         // Load dashboard data
         await Promise.all([
           loadStats(),
-          loadTokens()
+          loadTokens(),
+          loadSubscription()
         ]);
 
       } catch (error) {
@@ -130,6 +199,203 @@
       } catch (error) {
         console.error('Error loading stats:', error);
       }
+    }
+
+    // Load subscription information
+    async function loadSubscription() {
+      try {
+        const response = await apiCall(CONFIG.ENDPOINTS.SUBSCRIPTION);
+        const container = document.getElementById('subscriptionContent');
+        
+        if (response.ok) {
+          const subscription = await response.json();
+          displaySubscription(subscription);
+        } else {
+          // No active subscription
+          container.innerHTML = `
+            <div class="subscription-info">
+              <h3 style="color: var(--deep-pink); margin-bottom: 1rem;">No Active Subscription</h3>
+              <p style="color: var(--text-light); margin-bottom: 1.5rem;">Upgrade to unlock unlimited photo uploads and extended storage.</p>
+              <div class="subscription-actions">
+                <button onclick="startSubscription()" class="btn btn-primary">
+                  <span>✨</span>
+                  Add Subscription
+                </button>
+                <a href="#" onclick="viewPricing()" class="btn btn-secondary">
+                  <span>💰</span>
+                  View Pricing
+                </a>
+              </div>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('Error loading subscription:', error);
+        document.getElementById('subscriptionContent').innerHTML = `
+          <div class="message message-error">
+            Failed to load subscription information
+          </div>
+        `;
+      }
+    }
+
+    // Display subscription information
+    function displaySubscription(subscription) {
+      const container = document.getElementById('subscriptionContent');
+      const status = subscription.status;
+      const isActive = status === 'active';
+      
+      const statusClass = isActive ? 'subscription-active' : 'subscription-info';
+      const statusIcon = isActive ? '✅' : '⏳';
+      const statusText = isActive ? 'Active' : 'Inactive';
+      
+      let usageInfo = '';
+      if (subscription.usage) {
+        const storageUsed = Math.round((subscription.usage.storageUsed / (1024 * 1024 * 1024)) * 100) / 100;
+        const storageLimit = Math.round((subscription.usage.storageLimit / (1024 * 1024 * 1024)) * 100) / 100;
+        const storagePercent = Math.min((storageUsed / storageLimit) * 100, 100);
+        
+        usageInfo = `
+          <div class="usage-info">
+            <h4>Usage Statistics</h4>
+            <div class="usage-bars">
+              <div class="usage-bar">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>Storage Used</span>
+                  <span>${storageUsed}GB / ${storageLimit}GB</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${storagePercent}%"></div>
+                </div>
+              </div>
+              <div class="usage-bar">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                  <span>Uploads This Month</span>
+                  <span>${subscription.usage.uploadsThisMonth}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      
+      container.innerHTML = `
+        <div class="${statusClass}">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="color: var(--deep-pink); margin: 0;">
+              ${statusIcon} ${subscription.plan_name || 'Subscription'}
+            </h3>
+            <span class="price">${subscription.amount ? '$' + (subscription.amount / 100).toFixed(2) : 'Free'}</span>
+          </div>
+          
+          <p style="color: var(--text-light); margin-bottom: 1rem;">
+            Status: ${statusText}
+            ${subscription.current_period_end ? 
+              ` • Renews: ${new Date(subscription.current_period_end).toLocaleDateString()}` : ''}
+          </p>
+          
+          ${usageInfo}
+          
+          <div class="subscription-actions">
+            ${isActive ? `
+              <button onclick="openStripePortal()" class="btn btn-primary">
+                <span>⚙️</span>
+                Manage Subscription
+              </button>
+              <a href="https://billing.stripe.com/p/login" target="_blank" class="btn btn-secondary">
+                <span>🔗</span>
+                Open Stripe Portal
+              </a>
+            ` : `
+              <button onclick="startSubscription()" class="btn btn-primary">
+                <span>✨</span>
+                Activate Subscription
+              </button>
+            `}
+          </div>
+          
+          ${subscription.cancel_at_period_end ? `
+            <div class="subscription-meta">
+              <div class="message message-warning">
+                ⚠️ Subscription will cancel at the end of the current period
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // Start new subscription
+    async function startSubscription() {
+      try {
+        // Get pricing options first
+        const pricingResponse = await apiCall(CONFIG.ENDPOINTS.PRICING);
+        if (!pricingResponse.ok) {
+          throw new Error('Failed to load pricing');
+        }
+        
+        const pricing = await pricingResponse.json();
+        
+        // For now, use the first available price, or you could show a modal to select
+        const priceId = pricing.prices && pricing.prices.length > 0 ? pricing.prices[0].id : null;
+        
+        if (!priceId) {
+          showMessage('error', 'No subscription plans available');
+          return;
+        }
+        
+        // Create checkout session
+        const checkoutResponse = await apiCall(CONFIG.ENDPOINTS.CHECKOUT, {
+          method: 'POST',
+          body: JSON.stringify({ priceId })
+        });
+        
+        if (!checkoutResponse.ok) {
+          throw new Error('Failed to create checkout session');
+        }
+        
+        const checkout = await checkoutResponse.json();
+        
+        // Redirect to Stripe checkout
+        if (checkout.url) {
+          window.location.href = checkout.url;
+        } else {
+          throw new Error('No checkout URL returned');
+        }
+      } catch (error) {
+        console.error('Error starting subscription:', error);
+        showMessage('error', 'Failed to start subscription process: ' + error.message);
+      }
+    }
+
+    // Open Stripe customer portal
+    async function openStripePortal() {
+      try {
+        const response = await apiCall(CONFIG.ENDPOINTS.PORTAL, {
+          method: 'POST'
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create portal session');
+        }
+        
+        const portal = await response.json();
+        
+        if (portal.url) {
+          window.open(portal.url, '_blank');
+        } else {
+          throw new Error('No portal URL returned');
+        }
+      } catch (error) {
+        console.error('Error opening Stripe portal:', error);
+        showMessage('error', 'Failed to open subscription management: ' + error.message);
+      }
+    }
+
+    // View pricing information
+    function viewPricing() {
+      // Simple pricing display - could be enhanced with a modal
+      alert('Subscription Plans:\n\n📸 Photo Plan - $9.99/month\n• 5GB storage\n• Unlimited uploads\n• 30 days access\n\n🎥 Media Plan - $29.99/6 months\n• 15GB storage\n• Photos & Videos\n• 180 days access\n\nClick "Add Subscription" to get started!');
     }
 
     // Load user tokens

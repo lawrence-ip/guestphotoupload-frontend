@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Share Your Photos - GuestStory</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 0;">
+      <div class="card" style="max-width: 600px; width: 100%;">
+        <div class="card-header text-center">
+          <div style="font-size: 4rem; margin-bottom: 1rem;">📸</div>
+          <h1 class="card-title" style="justify-content: center;">Share Your Photos</h1>
+          <p class="card-subtitle">Help capture every moment! Upload your photos and videos from the event.</p>
+        </div>
+
+        <div id="errorMessage" class="message message-error" style="display: none;"></div>
+        <div id="successMessage" class="message message-success" style="display: none;"></div>
+        <div id="loadingMessage" class="message message-info" style="display: none;">Validating upload token...</div>
+
+        <div id="uploadSection" style="display: none;">
+          <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📤</div>
+            <h3 style="margin-bottom: 0.5rem; color: var(--deep-pink);">Drop files here or click to browse</h3>
+            <p style="color: var(--text-light); margin-bottom: 1rem;">Support for images (JPG, PNG, GIF) and videos (MP4, MOV, AVI)</p>
+            <div class="btn btn-primary">
+              <span>📁</span>
+              Choose Files
+            </div>
+          </div>
+
+          <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display: none;">
+
+          <div id="previewContainer" class="grid grid-2" style="display: none; margin-bottom: 2rem;"></div>
+
+          <button id="uploadBtn" class="btn btn-primary btn-lg w-full" style="display: none;">
+            <span id="uploadText">📤 Upload Files</span>
+            <span id="uploadSpinner" class="spinner hidden"></span>
+          </button>
+        </div>
+
+        <div id="tokenError" class="text-center" style="display: none;">
+          <div style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.5;">⚠️</div>
+          <h2 style="color: var(--deep-pink); margin-bottom: 0.5rem;">Invalid or Expired Token</h2>
+          <p style="color: var(--text-light);">This upload link is no longer valid. Please request a new one from the couple.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let selectedFiles = [];
+    let currentToken = null;
+
+    // Get token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+      showTokenError();
+    } else {
+      verifyToken();
+    }
+
+    async function verifyToken() {
+      document.getElementById('loadingMessage').style.display = 'block';
+      
+      try {
+        const response = await fetch(`/api/verify-token/${token}`);
+        const result = await response.json();
+        
+        if (response.ok && result.valid) {
+          currentToken = token;
+          showUploadSection();
+        } else {
+          showTokenError();
+        }
+      } catch (error) {
+        showTokenError();
+      } finally {
+        document.getElementById('loadingMessage').style.display = 'none';
+      }
+    }
+
+    function showUploadSection() {
+      document.getElementById('uploadSection').style.display = 'block';
+      setupFileHandling();
+    }
+
+    function showTokenError() {
+      document.getElementById('tokenError').style.display = 'block';
+    }
+
+    function setupFileHandling() {
+      const uploadArea = document.getElementById('uploadArea');
+      const fileInput = document.getElementById('fileInput');
+
+      // Click to select files
+      uploadArea.addEventListener('click', () => {
+        fileInput.click();
+      });
+
+      // Drag and drop
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+      });
+
+      uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+      });
+
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files);
+        handleFiles(files);
+      });
+
+      fileInput.addEventListener('change', (e) => {
+        const files = Array.from(e.target.files);
+        handleFiles(files);
+      });
+    }
+
+    function handleFiles(files) {
+      // Filter valid files
+      const validTypes = /image\/(jpeg|jpg|png|gif)|video\/(mp4|mov|avi)/;
+      const validFiles = files.filter(file => validTypes.test(file.type) && file.size <= 50 * 1024 * 1024);
+      
+      if (validFiles.length !== files.length) {
+        showError('Some files were skipped (invalid type or too large)');
+      }
+
+      selectedFiles = [...selectedFiles, ...validFiles];
+      displayPreviews();
+
+      if (selectedFiles.length > 0) {
+        document.getElementById('uploadBtn').style.display = 'block';
+      }
+    }
+
+    function displayPreviews() {
+      const container = document.getElementById('previewContainer');
+      container.innerHTML = '';
+
+      if (selectedFiles.length > 0) {
+        container.style.display = 'grid';
+
+        selectedFiles.forEach((file, index) => {
+          const preview = document.createElement('div');
+          preview.className = 'card';
+          preview.style.padding = '1rem';
+          preview.style.position = 'relative';
+
+          const removeBtn = document.createElement('button');
+          removeBtn.innerHTML = '✕';
+          removeBtn.className = 'btn btn-danger btn-sm';
+          removeBtn.style.position = 'absolute';
+          removeBtn.style.top = '0.5rem';
+          removeBtn.style.right = '0.5rem';
+          removeBtn.style.width = '30px';
+          removeBtn.style.height = '30px';
+          removeBtn.style.padding = '0';
+          removeBtn.style.borderRadius = '50%';
+          removeBtn.onclick = () => removeFile(index);
+
+          const fileName = document.createElement('p');
+          fileName.textContent = file.name;
+          fileName.style.marginBottom = '0.5rem';
+          fileName.style.fontWeight = '500';
+          fileName.style.fontSize = '0.9rem';
+
+          const fileSize = document.createElement('p');
+          fileSize.textContent = formatFileSize(file.size);
+          fileSize.style.color = 'var(--text-light)';
+          fileSize.style.fontSize = '0.8rem';
+
+          preview.appendChild(removeBtn);
+          preview.appendChild(fileName);
+          preview.appendChild(fileSize);
+
+          if (file.type.startsWith('image/')) {
+            const img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.style.width = '100%';
+            img.style.height = '100px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = 'var(--border-radius)';
+            img.style.marginTop = '0.5rem';
+            preview.appendChild(img);
+          }
+
+          container.appendChild(preview);
+        });
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      displayPreviews();
+
+      if (selectedFiles.length === 0) {
+        document.getElementById('uploadBtn').style.display = 'none';
+      }
+    }
+
+    async function uploadFiles() {
+      if (selectedFiles.length === 0) return;
+
+      const uploadBtn = document.getElementById('uploadBtn');
+      const uploadText = document.getElementById('uploadText');
+      const uploadSpinner = document.getElementById('uploadSpinner');
+
+      uploadBtn.disabled = true;
+      uploadText.classList.add('hidden');
+      uploadSpinner.classList.remove('hidden');
+
+      try {
+        const formData = new FormData();
+        selectedFiles.forEach(file => {
+          formData.append('media', file);
+        });
+
+        const response = await fetch(`/api/upload/${currentToken}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showSuccess(`Successfully uploaded ${selectedFiles.length} file(s)!`);
+          selectedFiles = [];
+          displayPreviews();
+          document.getElementById('uploadBtn').style.display = 'none';
+          document.getElementById('fileInput').value = '';
+        } else {
+          showError(result.error || 'Upload failed');
+        }
+      } catch (error) {
+        showError('Network error. Please try again.');
+      } finally {
+        uploadBtn.disabled = false;
+        uploadText.classList.remove('hidden');
+        uploadSpinner.classList.add('hidden');
+      }
+    }
+
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    function showError(message) {
+      const errorEl = document.getElementById('errorMessage');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      setTimeout(() => errorEl.style.display = 'none', 5000);
+    }
+
+    function showSuccess(message) {
+      const successEl = document.getElementById('successMessage');
+      successEl.textContent = message;
+      successEl.style.display = 'block';
+      setTimeout(() => successEl.style.display = 'none', 5000);
+    }
+
+    // Set up upload button click
+    document.getElementById('uploadBtn').addEventListener('click', uploadFiles);
+  </script>
+</body>
+</html>

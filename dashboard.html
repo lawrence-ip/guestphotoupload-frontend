@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo Collection Dashboard - GuestStory</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="/config.js"></script>
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="/dashboard.html" class="logo">
+          <span class="logo-icon">📸</span>
+          GuestStory
+        </a>
+        <nav class="nav">
+          <a href="/dashboard.html" class="nav-link">Dashboard</a>
+          <span id="userWelcome" class="nav-link"></span>
+          <a href="#" onclick="logout()" class="btn btn-secondary btn-sm">Logout</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main style="padding: 2rem 0;">
+    <div class="container">
+      <div id="errorMessage" class="message message-error" style="display: none;"></div>
+      <div id="successMessage" class="message message-success" style="display: none;"></div>
+
+      <!-- Stats Section -->
+      <div class="stats-grid" id="stats">
+        <div class="stat-card">
+          <div class="stat-number" id="totalTokens">0</div>
+          <div class="stat-label">Upload Links</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="totalUploads">0</div>
+          <div class="stat-label">Total Photos</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number" id="activeTokens">0</div>
+          <div class="stat-label">Active Links</div>
+        </div>
+      </div>
+
+      <!-- Create New Token -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span>🔗</span>
+            Create Upload Link
+          </h2>
+        </div>
+        <form id="tokenForm">
+          <div class="form-group">
+            <label for="tokenName" class="form-label">Collection Name</label>
+            <input type="text" id="tokenName" class="form-input" placeholder="e.g., Wedding Reception, Birthday Party" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="maxUploads" class="form-label">Maximum Photos</label>
+            <input type="number" id="maxUploads" class="form-input" min="1" max="500" value="50" required>
+          </div>
+          
+          <button type="submit" class="btn btn-primary">
+            <span id="createText">Create Upload Link</span>
+            <span id="createSpinner" class="spinner hidden"></span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Token List -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span>📋</span>
+            Your Upload Links
+          </h2>
+        </div>
+        <div id="tokensList">
+          <div class="message message-info">
+            <p>Loading upload links...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let userData = null;
+
+    // Initialize dashboard
+    async function initializeDashboard() {
+      try {
+        // Check authentication
+        const userResponse = await apiCall(CONFIG.ENDPOINTS.USER);
+        if (!userResponse.ok) {
+          window.location.href = '/login.html';
+          return;
+        }
+
+        userData = await userResponse.json();
+        document.getElementById('userWelcome').textContent = `Welcome, ${userData.name}`;
+
+        // Load dashboard data
+        await Promise.all([
+          loadStats(),
+          loadTokens()
+        ]);
+
+      } catch (error) {
+        console.error('Error initializing dashboard:', error);
+        showMessage('error', 'Failed to load dashboard data');
+      }
+    }
+
+    // Load user statistics
+    async function loadStats() {
+      try {
+        const response = await apiCall(CONFIG.ENDPOINTS.STATS);
+        if (response.ok) {
+          const stats = await response.json();
+          document.getElementById('totalTokens').textContent = stats.totalTokens;
+          document.getElementById('totalUploads').textContent = stats.totalUploads;
+          document.getElementById('activeTokens').textContent = stats.activeTokens;
+        }
+      } catch (error) {
+        console.error('Error loading stats:', error);
+      }
+    }
+
+    // Load user tokens
+    async function loadTokens() {
+      try {
+        const response = await apiCall(CONFIG.ENDPOINTS.TOKENS);
+        if (response.ok) {
+          const tokens = await response.json();
+          displayTokens(tokens);
+        } else {
+          document.getElementById('tokensList').innerHTML = '<div class="message message-error">Failed to load upload links</div>';
+        }
+      } catch (error) {
+        console.error('Error loading tokens:', error);
+        document.getElementById('tokensList').innerHTML = '<div class="message message-error">Failed to load upload links</div>';
+      }
+    }
+
+    // Display tokens in the list
+    function displayTokens(tokens) {
+      const container = document.getElementById('tokensList');
+      
+      if (tokens.length === 0) {
+        container.innerHTML = '<div class="message message-info">No upload links created yet. Create your first one above!</div>';
+        return;
+      }
+
+      container.innerHTML = tokens.map(token => {
+        const uploadUrl = `${CONFIG.FRONTEND_URL}/upload-guest.html?token=${token.token}`;
+        const isExpired = token.expires_at && new Date(token.expires_at) < new Date();
+        const expiryText = token.expires_at ? 
+          `Expires: ${new Date(token.expires_at).toLocaleDateString()}` : 
+          'Never expires';
+
+        return `
+          <div class="token-item ${isExpired ? 'expired' : ''}">
+            <div class="token-info">
+              <h3 class="token-name">${escapeHtml(token.name)}</h3>
+              <p class="token-details">
+                ${token.current_uploads || 0}/${token.max_uploads} photos uploaded • ${expiryText}
+              </p>
+            </div>
+            <div class="token-actions">
+              <button onclick="copyToClipboard('${uploadUrl}')" class="btn btn-secondary btn-sm">
+                Copy Link
+              </button>
+              <button onclick="showQR('${uploadUrl}', '${escapeHtml(token.name)}')" class="btn btn-secondary btn-sm">
+                QR Code
+              </button>
+              <button onclick="deleteToken(${token.id})" class="btn btn-danger btn-sm">
+                Delete
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Create new token
+    document.getElementById('tokenForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const name = document.getElementById('tokenName').value;
+      const maxUploads = parseInt(document.getElementById('maxUploads').value);
+      
+      const createText = document.getElementById('createText');
+      const createSpinner = document.getElementById('createSpinner');
+      
+      createText.classList.add('hidden');
+      createSpinner.classList.remove('hidden');
+
+      try {
+        const response = await apiCall(CONFIG.ENDPOINTS.TOKENS, {
+          method: 'POST',
+          body: JSON.stringify({ name, maxUploads })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          showMessage('success', 'Upload link created successfully!');
+          document.getElementById('tokenForm').reset();
+          document.getElementById('maxUploads').value = '50';
+          
+          // Reload data
+          await Promise.all([loadStats(), loadTokens()]);
+        } else {
+          showMessage('error', result.error || 'Failed to create upload link');
+        }
+      } catch (error) {
+        showMessage('error', 'Network error. Please try again.');
+      } finally {
+        createText.classList.remove('hidden');
+        createSpinner.classList.add('hidden');
+      }
+    });
+
+    // Delete token
+    async function deleteToken(tokenId) {
+      if (!confirm('Are you sure you want to delete this upload link? All associated uploads will remain but guests can no longer upload new photos.')) {
+        return;
+      }
+
+      try {
+        const response = await apiCall(`${CONFIG.ENDPOINTS.TOKENS}/${tokenId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          showMessage('success', 'Upload link deleted successfully');
+          await Promise.all([loadStats(), loadTokens()]);
+        } else {
+          const result = await response.json();
+          showMessage('error', result.error || 'Failed to delete upload link');
+        }
+      } catch (error) {
+        showMessage('error', 'Network error. Please try again.');
+      }
+    }
+
+    // Copy to clipboard
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showMessage('success', 'Link copied to clipboard!');
+      } catch (error) {
+        showMessage('error', 'Failed to copy link');
+      }
+    }
+
+    // Show QR code
+    function showQR(url, name) {
+      // Simple QR code modal (would need QR library in real implementation)
+      alert(`QR Code for "${name}":\n${url}\n\n(QR code generation requires additional library)`);
+    }
+
+    // Logout function
+    async function logout() {
+      try {
+        await apiCall(CONFIG.ENDPOINTS.LOGOUT);
+        window.location.href = '/login.html';
+      } catch (error) {
+        // Even if API call fails, redirect to login
+        window.location.href = '/login.html';
+      }
+    }
+
+    // Utility functions
+    function showMessage(type, message) {
+      const errorEl = document.getElementById('errorMessage');
+      const successEl = document.getElementById('successMessage');
+
+      errorEl.style.display = 'none';
+      successEl.style.display = 'none';
+
+      if (type === 'error') {
+        errorEl.textContent = message;
+        errorEl.style.display = 'block';
+      } else if (type === 'success') {
+        successEl.textContent = message;
+        successEl.style.display = 'block';
+      }
+
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        errorEl.style.display = 'none';
+        successEl.style.display = 'none';
+      }, 5000);
+    }
+
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initializeDashboard);
+  </script>
+</body>
+</html>

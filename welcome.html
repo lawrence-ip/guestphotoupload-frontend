@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome - GuestStory</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📸</text></svg>">
+    <link href="css/style.css" rel="stylesheet">
+    <style>
+        .welcome-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .welcome-card {
+            background: var(--white);
+            border-radius: var(--border-radius-lg);
+            padding: 3rem 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-lg);
+            border: 3px solid var(--light-pink);
+        }
+        
+        .event-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .event-title {
+            font-size: 2.5rem;
+            color: var(--deep-pink);
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .event-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+        
+        .welcome-message {
+            color: var(--text-light);
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+        
+        .upload-button {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: var(--border-radius);
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+        
+        .upload-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .loading-state {
+            color: var(--text-light);
+        }
+        
+        .error-state {
+            color: var(--error);
+            background: var(--error-light);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            border: 2px solid var(--error);
+        }
+        
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 1.5rem 0;
+            text-align: left;
+            background: var(--pale-pink);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+        }
+        
+        .features-list li {
+            padding: 0.5rem 0;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+        
+        .features-list li::before {
+            content: "✓ ";
+            color: var(--accent-pink);
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+            .welcome-container {
+                padding: 1rem;
+            }
+            
+            .welcome-card {
+                padding: 2rem 1.5rem;
+            }
+            
+            .event-title {
+                font-size: 2rem;
+            }
+            
+            .event-subtitle {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="welcome-container">
+            <div class="welcome-card">
+                <!-- Loading State -->
+                <div id="loadingState" class="loading-state">
+                    <div class="event-icon">📸</div>
+                    <div class="event-title">Loading...</div>
+                    <div class="event-subtitle">Getting your event details ready...</div>
+                </div>
+
+                <!-- Welcome State -->
+                <div id="welcomeState" style="display: none;">
+                    <div class="event-icon">🎉</div>
+                    <h1 id="eventTitle" class="event-title">Welcome!</h1>
+                    <p id="eventSubtitle" class="event-subtitle">Share your memories with us</p>
+                    
+                    <div class="welcome-message">
+                        <p>You've been invited to share photos and videos from this special event. Your uploads will be safely stored and shared with the event organizer.</p>
+                    </div>
+
+                    <ul class="features-list">
+                        <li>Upload photos and videos instantly</li>
+                        <li>Support for all common formats (JPG, PNG, MP4, MOV)</li>
+                        <li>Secure cloud storage</li>
+                        <li>Mobile-friendly interface</li>
+                    </ul>
+
+                    <a id="uploadLink" href="#" class="upload-button">
+                        <span>📤</span>
+                        Start Uploading Your Photos
+                    </a>
+
+                    <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 1rem;">
+                        Powered by GuestStory
+                    </p>
+                </div>
+
+                <!-- Error State -->
+                <div id="errorState" style="display: none;" class="error-state">
+                    <div class="event-icon">❌</div>
+                    <h2>Oops! Something went wrong</h2>
+                    <p id="errorMessage">Unable to load event details</p>
+                    <p style="margin-top: 1rem;">
+                        <button onclick="location.reload()" class="btn btn-secondary">
+                            Try Again
+                        </button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentToken = null;
+        let tokenData = null;
+
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        currentToken = urlParams.get('token');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!currentToken) {
+                showError('Invalid or missing token');
+                return;
+            }
+
+            await loadEventDetails();
+        });
+
+        async function loadEventDetails() {
+            try {
+                // Track QR scan
+                await trackQRScan();
+
+                // Verify token and get event details
+                const response = await fetch(`/api/verify-token/${currentToken}`);
+                const result = await response.json();
+
+                if (!result.valid) {
+                    showError(result.message || 'Invalid or expired token');
+                    return;
+                }
+
+                tokenData = result.token;
+                showWelcome();
+            } catch (error) {
+                console.error('Error loading event details:', error);
+                showError('Failed to load event details. Please try again.');
+            }
+        }
+
+        async function trackQRScan() {
+            try {
+                await fetch(`/api/track-qr-scan/${currentToken}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ guestName: null })
+                });
+            } catch (error) {
+                console.log('Could not track QR scan:', error);
+            }
+        }
+
+        function showWelcome() {
+            const eventName = tokenData.event_name || 'Photo Collection';
+            
+            // Update content
+            document.getElementById('eventTitle').textContent = eventName;
+            document.getElementById('eventSubtitle').textContent = `Share your memories from ${eventName}`;
+            document.getElementById('uploadLink').href = `/upload-guest?token=${currentToken}`;
+
+            // Show welcome state
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('welcomeState').style.display = 'block';
+            document.getElementById('errorState').style.display = 'none';
+
+            // Update page title
+            document.title = `Welcome to ${eventName} - GuestStory`;
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').textContent = message;
+            
+            // Show error state
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('welcomeState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+        }
+
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', () => {
+            // Add subtle animation to the welcome card
+            const card = document.querySelector('.welcome-card');
+            setTimeout(() => {
+                card.style.transform = 'translateY(-5px)';
+                card.style.transition = 'transform 0.3s ease';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

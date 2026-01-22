@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GuestStory - Collect Photos & Videos from Your Guests</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    .hero {
+      background: var(--gradient-light);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      text-align: center;
+      padding: 2rem 0;
+    }
+    
+    .hero-content {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 700;
+      color: var(--deep-pink);
+      margin-bottom: 1.5rem;
+      line-height: 1.2;
+    }
+    
+    .hero .subtitle {
+      font-size: 1.5rem;
+      color: var(--text-light);
+      margin-bottom: 3rem;
+      font-weight: 400;
+    }
+
+    .plans-section {
+      padding: 4rem 0;
+      background: var(--white);
+    }
+
+    .plans-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+
+    .pricing-card {
+      background: white;
+      border-radius: var(--border-radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+      position: relative;
+      border: 2px solid transparent;
+      transition: var(--transition);
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-xl);
+    }
+
+    .pricing-card.featured {
+      border-color: var(--primary-pink);
+      transform: scale(1.05);
+    }
+
+    .pricing-card.featured::before {
+      content: "MOST POPULAR";
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary-pink);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: var(--border-radius);
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+
+    .plan-name {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--deep-pink);
+      margin-bottom: 1rem;
+    }
+
+    .plan-price {
+      font-size: 3rem;
+      font-weight: bold;
+      color: var(--primary-pink);
+      margin-bottom: 0.5rem;
+    }
+
+    .plan-period {
+      color: var(--text-light);
+      margin-bottom: 2rem;
+    }
+
+    .plan-features {
+      list-style: none;
+      margin: 2rem 0;
+    }
+
+    .plan-features li {
+      padding: 0.5rem 0;
+      color: var(--text-dark);
+    }
+
+    .plan-features li::before {
+      content: "✅ ";
+      margin-right: 0.5rem;
+    }
+    
+    .features {
+      padding: 4rem 0;
+      background: var(--gray-50);
+    }
+    
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 3rem;
+      margin-top: 3rem;
+    }
+    
+    .feature {
+      text-align: center;
+      padding: 2rem;
+    }
+    
+    .feature-icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .feature h3 {
+      font-size: 1.5rem;
+      color: var(--deep-pink);
+      margin-bottom: 1rem;
+    }
+    
+    .feature p {
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="/" class="logo">
+          <span class="logo-icon">📸</span>
+          GuestStory
+        </a>
+        <nav class="nav">
+          <a href="/login" class="btn btn-secondary">Login</a>
+          <a href="/register" class="btn btn-primary">Get Started</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <h1>📸 GuestStory</h1>
+          <p class="subtitle">Collect photos & videos from your guests effortlessly</p>
+          <p style="color: var(--text-light); margin-bottom: 2rem;">Perfect for events, parties, gatherings, or any occasion where you want guests to share their memories.</p>
+          <a href="/register" class="btn btn-primary btn-lg">
+            <span>✨</span>
+            Start Collecting Stories
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Plans Section -->
+    <section class="plans-section">
+      <div class="plans-container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <h2 style="font-size: 2.5rem; color: var(--deep-pink); margin-bottom: 1rem;">Choose Your Plan</h2>
+          <p style="color: var(--text-light); font-size: 1.2rem;">Simple pricing for every occasion</p>
+        </div>
+        
+        <div class="pricing-grid" id="pricingPlans">
+          <div class="pricing-card">
+            <div class="plan-name">Free Trial</div>
+            <div class="plan-price">Free</div>
+            <div class="plan-period">7 days</div>
+            <ul class="plan-features">
+              <li>10 photo uploads</li>
+              <li>7 days access</li>
+              <li>GCP to Google Drive</li>
+              <li>QR code sharing</li>
+            </ul>
+            <a href="/register" class="btn btn-success w-full">Start Free Trial</a>
+          </div>
+
+          <div class="pricing-card featured">
+            <div class="plan-name">Photo Plan</div>
+            <div class="plan-price">$9.99</div>
+            <div class="plan-period">30 days</div>
+            <ul class="plan-features">
+              <li>5GB storage</li>
+              <li>30 days access</li>
+              <li>Photos only</li>
+              <li>GCP to Google Drive</li>
+              <li>QR code sharing</li>
+            </ul>
+            <a href="/register" class="btn btn-primary w-full">Choose Plan</a>
+          </div>
+
+          <div class="pricing-card">
+            <div class="plan-name">Media Plan</div>
+            <div class="plan-price">$29.99</div>
+            <div class="plan-period">180 days</div>
+            <ul class="plan-features">
+              <li>15GB storage</li>
+              <li>180 days access</li>
+              <li>Photos & Videos</li>
+              <li>GCP to Google Drive</li>
+              <li>Priority support</li>
+            </ul>
+            <a href="/register" class="btn btn-primary w-full">Choose Plan</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+      <div class="container">
+        <div style="text-align: center; margin-bottom: 2rem;">
+          <h2 style="font-size: 2.5rem; color: var(--deep-pink); margin-bottom: 1rem;">Why Choose GuestStory?</h2>
+          <p style="color: var(--text-light); font-size: 1.2rem;">Everything you need to collect and organize guest photos</p>
+        </div>
+        
+        <div class="feature-grid">
+          <div class="feature">
+            <div class="feature-icon">🔗</div>
+            <h3>QR Code Sharing</h3>
+            <p>Generate unique QR codes that guests can scan to instantly upload their photos and videos.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">📱</div>
+            <h3>Mobile Friendly</h3>
+            <p>Works perfectly on any device - phones, tablets, or computers. No app downloads required.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">☁️</div>
+            <h3>Cloud Storage</h3>
+            <p>Automatic backup to Google Drive with secure temporary storage during the upload process.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">🎨</div>
+            <h3>Beautiful Interface</h3>
+            <p>Clean, intuitive design that makes it easy for guests of all ages to upload their memories.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">🔒</div>
+            <h3>Secure & Private</h3>
+            <p>Time-limited access tokens ensure your photo collection remains private and secure.</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">📊</div>
+            <h3>Easy Management</h3>
+            <p>Track uploads, manage collections, and monitor usage from your personal dashboard.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+      <div class="container">
+        <h2>Ready to Start Collecting Stories?</h2>
+        <p>Join thousands of event organizers who trust GuestStory to capture their special moments</p>
+        <a href="/register" class="btn btn-secondary btn-lg" style="background: white; color: var(--primary-pink);">
+          <span>🚀</span>
+          Get Started Now
+        </a>
+      </div>
+    </section>
+  </main>
+          <span class="logo-icon">💒</span>
+          WedUploader
+        </a>
+        <nav class="nav">
+          <a href="/login" class="btn btn-secondary btn-sm">Login</a>
+          <a href="/register" class="btn btn-primary btn-sm">Create Album</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1>The Simple Way To Collect Wedding Photos & Videos From Your Guests</h1>
+        <p class="subtitle">Keep every private moment with friends and family in your Google Drive™ cloud storage!</p>
+        <a href="/register" class="btn btn-primary btn-lg" style="margin-right: 1rem;">Create Wedding Album</a>
+        <a href="/login" class="btn btn-secondary btn-lg">Login</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="features">
+    <div class="container">
+      <div class="text-center">
+        <h2 style="font-size: 2.5rem; color: var(--deep-pink); margin-bottom: 1rem;">Why Choose WedUploader?</h2>
+        <p style="font-size: 1.2rem; color: var(--text-light);">Relive your big day through the eyes of your beloved ones</p>
+      </div>
+      
+      <div class="feature-grid">
+        <div class="feature">
+          <div class="feature-icon">♾️</div>
+          <h3>Lasts Forever</h3>
+          <p>Free for your guests! Create unlimited wedding albums that never expire.</p>
+        </div>
+        
+        <div class="feature">
+          <div class="feature-icon">🚫</div>
+          <h3>No Limits</h3>
+          <p>WedUploader allows unlimited uploads, in original quality, from unlimited guests and it's all privately stored in your Google Drive.</p>
+        </div>
+        
+        <div class="feature">
+          <div class="feature-icon">📱</div>
+          <h3>No App Required</h3>
+          <p>WedUploader enables your guests to upload photos and videos using any web browser via URL or QR code.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="steps">
+    <div class="container">
+      <div class="text-center">
+        <h2 style="font-size: 2.5rem; color: var(--deep-pink); margin-bottom: 1rem;">How To Collect Your Wedding Photos?</h2>
+      </div>
+      
+      <div class="step-grid">
+        <div class="step">
+          <div class="step-number">01</div>
+          <h3>Create An Album</h3>
+          <p>Sign-up, connect Google Drive, and create an album.</p>
+        </div>
+        
+        <div class="step">
+          <div class="step-number">02</div>
+          <h3>Share Your Album</h3>
+          <p>WedUploader will create a unique web URL and QR code for you to share with your wedding guests.</p>
+        </div>
+        
+        <div class="step">
+          <div class="step-number">03</div>
+          <h3>Collect Memories</h3>
+          <p>Guests upload photos and videos which go directly to your Google Drive.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <div class="container">
+      <h2>Start Collecting Photos Today!</h2>
+      <p>Your album never expires and it's completely free for your guests.</p>
+      <a href="/register" class="btn btn-secondary btn-lg" style="background: white; color: var(--primary-pink);">Create Wedding Album</a>
+    </div>
+  </section>
+
+  <footer style="background: var(--gray-100); padding: 2rem 0; text-align: center; color: var(--text-light);">
+    <div class="container">
+      <p>&copy; 2025 WedUploader. Google Drive is a trademark of Google LLC.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Check if already logged in and redirect
+    fetch('/api/user')
+      .then(response => {
+        if (response.ok) {
+          window.location.href = '/dashboard';
+        }
+      })
+      .catch(() => {
+        // User not logged in, stay on landing page
+      });
+  </script>
+</body>
+</html>

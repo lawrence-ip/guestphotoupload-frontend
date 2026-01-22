@@ -1,0 +1,17 @@
+{
+  "name": "guestphotoupload-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for GuestStory photo collection application",
+  "scripts": {
+    "dev": "live-server --port=3001 --host=localhost --watch=. --open=/login.html",
+    "start": "live-server --port=3001 --host=0.0.0.0",
+    "build": "echo 'Frontend is static HTML/CSS/JS - no build step required'",
+    "preview": "live-server --port=3001 --host=localhost"
+  },
+  "keywords": ["photo", "upload", "guest", "collection"],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

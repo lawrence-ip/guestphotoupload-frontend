@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Your Photos & Videos - GuestStory</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📸</text></svg>">
+    <link href="css/style.css" rel="stylesheet">
+    <style>
+        .upload-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, var(--pale-pink) 0%, rgba(255, 107, 157, 0.1) 100%);
+            border-radius: var(--border-radius-lg);
+        }
+        
+        .upload-zone {
+            border: 2px dashed var(--light-pink);
+            border-radius: var(--border-radius-lg);
+            padding: 3rem 2rem;
+            text-align: center;
+            transition: var(--transition);
+            background: var(--white);
+            cursor: pointer;
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--primary-pink);
+            background: rgba(255, 107, 157, 0.05);
+        }
+        
+        .upload-zone.dragover {
+            border-color: var(--primary-pink);
+            background: rgba(255, 107, 157, 0.1);
+            transform: scale(1.02);
+        }
+        
+        .file-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .file-item {
+            position: relative;
+            background: var(--white);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .file-item img, .file-item video {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+        }
+        
+        .file-item .file-info {
+            padding: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+        
+        .file-item .remove-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--gray-200);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .guest-form {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        @media (max-width: 768px) {
+            .upload-container {
+                padding: 1rem;
+            }
+            
+            .file-preview {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <div class="upload-container">
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <h1 id="eventTitle">📸 Loading...</h1>
+                <p id="eventSubtitle" style="font-size: 1.2rem; color: var(--text-dark); margin-bottom: 1rem;">
+                    Getting ready for your event...
+                </p>
+                <p style="color: var(--text-light);">
+                    Your uploads will be safely stored and shared with the event organizer.
+                </p>
+            </div>
+
+            <!-- Guest Information Form -->
+            <div class="guest-form">
+                <h3 style="margin-bottom: 1rem; color: var(--deep-pink);">✨ Tell us who you are (optional)</h3>
+                <div class="form-group">
+                    <label for="guestName" class="form-label">Your Name</label>
+                    <input type="text" id="guestName" class="form-input" placeholder="Enter your name (helps organize photos)">
+                </div>
+            </div>
+
+            <!-- Upload Zone -->
+            <div class="upload-zone" id="uploadZone">
+                <div id="uploadContent">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📁</div>
+                    <h3 style="color: var(--deep-pink); margin-bottom: 0.5rem;">
+                        Drag & Drop or Click to Upload
+                    </h3>
+                    <p style="color: var(--text-light); margin-bottom: 1rem;">
+                        Photos, videos, and other media files
+                    </p>
+                    <button class="btn btn-primary">
+                        Choose Files
+                    </button>
+                    <p style="font-size: 0.9rem; color: var(--text-light); margin-top: 1rem;">
+                        Supported formats: JPG, PNG, MP4, MOV, GIF, HEIC
+                    </p>
+                </div>
+                
+                <div id="uploadingContent" style="display: none;">
+                    <div class="spinner" style="width: 40px; height: 40px; margin-bottom: 1rem;"></div>
+                    <h3 style="color: var(--primary-pink);">Uploading your files...</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <p id="uploadStatus">Preparing upload...</p>
+                </div>
+            </div>
+
+            <input type="file" id="fileInput" multiple accept="image/*,video/*" style="display: none;">
+
+            <!-- File Preview -->
+            <div class="file-preview" id="filePreview"></div>
+
+            <!-- Upload Button -->
+            <div style="text-align: center; margin-top: 2rem;" id="uploadButtonContainer" style="display: none;">
+                <button class="btn btn-primary btn-lg" id="uploadButton">
+                    <span>🚀</span>
+                    Upload <span id="fileCount">0</span> Files
+                </button>
+            </div>
+
+            <!-- Success Message -->
+            <div id="successMessage" class="message message-success" style="display: none; margin-top: 2rem;">
+                <h3>🎉 Upload Successful!</h3>
+                <p>Thank you for sharing your memories! Your files have been uploaded successfully.</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="message message-error" style="display: none; margin-top: 2rem;"></div>
+        </div>
+    </main>
+
+    <script>
+        let selectedFiles = [];
+        let currentToken = null;
+        let tokenData = null;
+
+        // Get token from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        currentToken = urlParams.get('token');
+
+        // DOM elements
+        const uploadZone = document.getElementById('uploadZone');
+        const fileInput = document.getElementById('fileInput');
+        const filePreview = document.getElementById('filePreview');
+        const uploadButton = document.getElementById('uploadButton');
+        const uploadButtonContainer = document.getElementById('uploadButtonContainer');
+        const guestNameInput = document.getElementById('guestName');
+        const fileCountSpan = document.getElementById('fileCount');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!currentToken) {
+                showError('Invalid or missing upload token');
+                return;
+            }
+
+            // Track QR scan
+            await trackQRScan();
+
+            // Verify token
+            await verifyToken();
+
+            setupEventListeners();
+        });
+
+        async function trackQRScan() {
+            try {
+                const guestName = guestNameInput.value.trim();
+                await fetch(`/api/track-qr-scan/${currentToken}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ guestName })
+                });
+            } catch (error) {
+                console.log('Could not track QR scan:', error);
+            }
+        }
+
+        async function verifyToken() {
+            try {
+                const response = await fetch(`/api/verify-token/${currentToken}`);
+                const result = await response.json();
+
+                if (!result.valid) {
+                    showError(result.message || 'Invalid or expired token');
+                    return;
+                }
+
+                tokenData = result.token;
+                
+                // Update the page with event information
+                const eventName = tokenData.event_name || 'Photo Collection';
+                document.getElementById('eventTitle').textContent = `📸 ${eventName}`;
+                document.getElementById('eventSubtitle').textContent = `Upload your photos and videos from ${eventName}!`;
+                
+                console.log('Token verified successfully for:', eventName);
+            } catch (error) {
+                showError('Failed to verify upload token');
+            }
+        }
+
+        function setupEventListeners() {
+            // Upload zone click
+            uploadZone.addEventListener('click', () => {
+                if (uploadZone.classList.contains('uploading')) return;
+                fileInput.click();
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(Array.from(e.target.files));
+            });
+
+            // Drag and drop
+            uploadZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadZone.classList.add('dragover');
+            });
+
+            uploadZone.addEventListener('dragleave', () => {
+                uploadZone.classList.remove('dragover');
+            });
+
+            uploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadZone.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files);
+                handleFiles(files);
+            });
+
+            // Upload button
+            uploadButton.addEventListener('click', uploadFiles);
+
+            // Guest name change - track when they enter their name
+            guestNameInput.addEventListener('blur', async () => {
+                if (guestNameInput.value.trim()) {
+                    await trackQRScan(); // Re-track with name
+                }
+            });
+        }
+
+        function handleFiles(files) {
+            const validFiles = files.filter(file => {
+                const isValidType = file.type.startsWith('image/') || file.type.startsWith('video/');
+                const isValidSize = file.size <= 100 * 1024 * 1024; // 100MB limit
+                
+                if (!isValidType) {
+                    showError(`${file.name} is not a supported file type`);
+                    return false;
+                }
+                
+                if (!isValidSize) {
+                    showError(`${file.name} is too large (max 100MB)`);
+                    return false;
+                }
+                
+                return true;
+            });
+
+            selectedFiles = [...selectedFiles, ...validFiles];
+            updateFilePreview();
+            updateUploadButton();
+        }
+
+        function updateFilePreview() {
+            filePreview.innerHTML = '';
+
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+
+                const preview = document.createElement(file.type.startsWith('video/') ? 'video' : 'img');
+                preview.src = URL.createObjectURL(file);
+                if (preview.tagName === 'VIDEO') {
+                    preview.controls = false;
+                    preview.muted = true;
+                }
+
+                const fileInfo = document.createElement('div');
+                fileInfo.className = 'file-info';
+                fileInfo.textContent = `${file.name} (${formatFileSize(file.size)})`;
+
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-btn';
+                removeBtn.innerHTML = '×';
+                removeBtn.onclick = () => removeFile(index);
+
+                fileItem.appendChild(preview);
+                fileItem.appendChild(fileInfo);
+                fileItem.appendChild(removeBtn);
+                filePreview.appendChild(fileItem);
+            });
+        }
+
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFilePreview();
+            updateUploadButton();
+        }
+
+        function updateUploadButton() {
+            fileCountSpan.textContent = selectedFiles.length;
+            uploadButtonContainer.style.display = selectedFiles.length > 0 ? 'block' : 'none';
+        }
+
+        async function uploadFiles() {
+            if (selectedFiles.length === 0) return;
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => {
+                formData.append('media', file);
+            });
+
+            // Add guest name if provided
+            const guestName = guestNameInput.value.trim();
+            if (guestName) {
+                formData.append('guestName', guestName);
+            }
+
+            try {
+                // Show uploading state
+                uploadZone.classList.add('uploading');
+                document.getElementById('uploadContent').style.display = 'none';
+                document.getElementById('uploadingContent').style.display = 'block';
+                uploadButtonContainer.style.display = 'none';
+
+                const response = await fetch(`/api/upload/${currentToken}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showSuccess();
+                    selectedFiles = [];
+                    updateFilePreview();
+                } else {
+                    // Handle Google Drive authentication error specifically
+                    if (result.requiresDriveAuth) {
+                        showDriveAuthError();
+                    } else {
+                        throw new Error(result.error || 'Upload failed');
+                    }
+                }
+            } catch (error) {
+                showError('Upload failed: ' + error.message);
+                resetUploadState();
+            }
+        }
+
+        function showSuccess() {
+            uploadZone.style.display = 'none';
+            filePreview.style.display = 'none';
+            successMessage.style.display = 'block';
+            errorMessage.style.display = 'none';
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+            resetUploadState();
+        }
+
+        function showDriveAuthError() {
+            const driveErrorMessage = `
+                <strong>Google Drive Not Connected</strong><br>
+                The event organizer needs to connect their Google Drive account to enable photo uploads.<br><br>
+                <em>Please contact the event organizer to set up Google Drive integration.</em>
+            `;
+            errorMessage.innerHTML = driveErrorMessage;
+            errorMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+            resetUploadState();
+        }
+
+        function resetUploadState() {
+            uploadZone.classList.remove('uploading');
+            document.getElementById('uploadContent').style.display = 'block';
+            document.getElementById('uploadingContent').style.display = 'none';
+            updateUploadButton();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html>

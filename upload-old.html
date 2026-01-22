@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Photos</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+      text-align: center;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+      text-align: center;
+    }
+    
+    .upload-area {
+      border: 3px dashed #667eea;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-bottom: 20px;
+    }
+    
+    .upload-area:hover {
+      background: #f8f9fa;
+      border-color: #764ba2;
+    }
+    
+    .upload-area.dragover {
+      background: #e7f3ff;
+      border-color: #0066cc;
+    }
+    
+    .upload-icon {
+      font-size: 4em;
+      margin-bottom: 15px;
+    }
+    
+    input[type="file"] {
+      display: none;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-weight: 600;
+      width: 100%;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:active {
+      transform: translateY(0);
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .preview-container {
+      margin: 20px 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .preview-item {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    
+    .preview-item img, .preview-item video {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+      margin-right: 15px;
+    }
+    
+    .preview-info {
+      flex: 1;
+    }
+    
+    .preview-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    
+    .preview-size {
+      color: #666;
+      font-size: 0.9em;
+    }
+    
+    .remove-btn {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .progress-container {
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 30px;
+      background: #e9ecef;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transition: width 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+    }
+    
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📸 Upload Photos</h1>
+    <p class="subtitle">Share your memories</p>
+    
+    <div id="errorMessage" class="error" style="display: none;"></div>
+    <div id="successMessage" class="success" style="display: none;"></div>
+    <div id="infoMessage" class="info" style="display: none;"></div>
+    
+    <div id="uploadSection">
+      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+        <div class="upload-icon">📁</div>
+        <h3>Click to select files</h3>
+        <p>or drag and drop here</p>
+        <p style="color: #999; margin-top: 10px; font-size: 0.9em;">
+          Supported: JPG, PNG, GIF, MP4, MOV, AVI (max 50MB per file)
+        </p>
+      </div>
+      
+      <input type="file" id="fileInput" multiple accept="image/*,video/*" onchange="handleFileSelect(event)">
+      
+      <div id="previewContainer" class="preview-container"></div>
+      
+      <button id="uploadBtn" onclick="uploadFiles()" style="display: none;">Upload Files</button>
+      
+      <div id="progressContainer" class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill">0%</div>
+        </div>
+        <p style="text-align: center; color: #666;" id="progressText">Uploading...</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let selectedFiles = [];
+    let token = null;
+    
+    // Get token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    token = urlParams.get('token');
+    
+    if (!token) {
+      showError('No upload token provided. Please scan the QR code again.');
+      document.getElementById('uploadSection').style.display = 'none';
+    } else {
+      verifyToken();
+    }
+    
+    async function verifyToken() {
+      try {
+        const response = await fetch(`/api/verify-token/${token}`);
+        const data = await response.json();
+        
+        if (!data.valid) {
+          showError(data.message || 'Invalid or expired token');
+          document.getElementById('uploadSection').style.display = 'none';
+        } else {
+          showInfo('Token verified! You can now upload photos.');
+        }
+      } catch (error) {
+        showError('Failed to verify token');
+        document.getElementById('uploadSection').style.display = 'none';
+      }
+    }
+    
+    // Drag and drop handlers
+    const uploadArea = document.getElementById('uploadArea');
+    
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      handleFiles(e.dataTransfer.files);
+    });
+    
+    function handleFileSelect(event) {
+      handleFiles(event.target.files);
+    }
+    
+    function handleFiles(files) {
+      for (let file of files) {
+        if (file.size > 50 * 1024 * 1024) {
+          showError(`File ${file.name} is too large (max 50MB)`);
+          continue;
+        }
+        selectedFiles.push(file);
+      }
+      updatePreview();
+    }
+    
+    function updatePreview() {
+      const container = document.getElementById('previewContainer');
+      const uploadBtn = document.getElementById('uploadBtn');
+      
+      if (selectedFiles.length === 0) {
+        container.innerHTML = '';
+        uploadBtn.style.display = 'none';
+        return;
+      }
+      
+      uploadBtn.style.display = 'block';
+      container.innerHTML = '';
+      
+      selectedFiles.forEach((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'preview-item';
+        
+        const isVideo = file.type.startsWith('video/');
+        const mediaElement = document.createElement(isVideo ? 'video' : 'img');
+        const url = URL.createObjectURL(file);
+        mediaElement.src = url;
+        
+        item.innerHTML = `
+          ${mediaElement.outerHTML}
+          <div class="preview-info">
+            <div class="preview-name">${file.name}</div>
+            <div class="preview-size">${formatFileSize(file.size)}</div>
+          </div>
+          <button class="remove-btn" onclick="removeFile(${index})">Remove</button>
+        `;
+        
+        container.appendChild(item);
+      });
+    }
+    
+    function removeFile(index) {
+      selectedFiles.splice(index, 1);
+      updatePreview();
+    }
+    
+    async function uploadFiles() {
+      if (selectedFiles.length === 0) {
+        showError('Please select files to upload');
+        return;
+      }
+      
+      const uploadBtn = document.getElementById('uploadBtn');
+      const progressContainer = document.getElementById('progressContainer');
+      const progressFill = document.getElementById('progressFill');
+      
+      try {
+        uploadBtn.disabled = true;
+        progressContainer.style.display = 'block';
+        hideMessages();
+        
+        const formData = new FormData();
+        selectedFiles.forEach(file => {
+          formData.append('media', file);
+        });
+        
+        const xhr = new XMLHttpRequest();
+        
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            progressFill.style.width = percentComplete + '%';
+            progressFill.textContent = percentComplete + '%';
+          }
+        });
+        
+        xhr.addEventListener('load', () => {
+          if (xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            showSuccess(`Successfully uploaded ${response.files.length} file(s)!`);
+            selectedFiles = [];
+            updatePreview();
+            progressContainer.style.display = 'none';
+            progressFill.style.width = '0%';
+            progressFill.textContent = '0%';
+          } else {
+            const error = JSON.parse(xhr.responseText);
+            showError(error.error || 'Upload failed');
+          }
+          uploadBtn.disabled = false;
+        });
+        
+        xhr.addEventListener('error', () => {
+          showError('Upload failed. Please try again.');
+          uploadBtn.disabled = false;
+          progressContainer.style.display = 'none';
+        });
+        
+        xhr.open('POST', `/api/upload/${token}`);
+        xhr.send(formData);
+        
+      } catch (error) {
+        showError('Upload failed: ' + error.message);
+        uploadBtn.disabled = false;
+        progressContainer.style.display = 'none';
+      }
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    }
+    
+    function showError(message) {
+      const errorEl = document.getElementById('errorMessage');
+      errorEl.textContent = message;
+      errorEl.style.display = 'block';
+      setTimeout(() => errorEl.style.display = 'none', 5000);
+    }
+    
+    function showSuccess(message) {
+      const successEl = document.getElementById('successMessage');
+      successEl.textContent = message;
+      successEl.style.display = 'block';
+    }
+    
+    function showInfo(message) {
+      const infoEl = document.getElementById('infoMessage');
+      infoEl.textContent = message;
+      infoEl.style.display = 'block';
+      setTimeout(() => infoEl.style.display = 'none', 3000);
+    }
+    
+    function hideMessages() {
+      document.getElementById('errorMessage').style.display = 'none';
+      document.getElementById('successMessage').style.display = 'none';
+      document.getElementById('infoMessage').style.display = 'none';
+    }
+  </script>
+</body>
+</html>

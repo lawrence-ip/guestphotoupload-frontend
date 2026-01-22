@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GuestStory - Photo Collection Made Simple</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="/config.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Loading state -->
+    <div id="loading" class="loading-screen">
+      <div class="spinner"></div>
+      <p>Loading...</p>
+    </div>
+
+    <!-- Content will be loaded here -->
+    <div id="content" style="display: none;"></div>
+  </div>
+
+  <script>
+    // Check authentication status and route accordingly
+    async function initializeApp() {
+      try {
+        // Check if user is authenticated
+        const response = await apiCall(CONFIG.ENDPOINTS.USER);
+        
+        if (response.ok) {
+          // User is authenticated, redirect to dashboard
+          window.location.href = '/dashboard.html';
+        } else {
+          // Not authenticated, redirect to login
+          window.location.href = '/login.html';
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        // On error, redirect to login
+        window.location.href = '/login.html';
+      }
+    }
+
+    // Initialize app on page load
+    document.addEventListener('DOMContentLoaded', initializeApp);
+  </script>
+</body>
+</html>
